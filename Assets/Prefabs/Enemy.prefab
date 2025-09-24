@@ -127,9 +127,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19776777ad749c044b922f4d1efa4346, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  followDistance: 15
+  followDistance: 405.7
   attackDistance: 2
-  moveSpeed: 3
+  moveSpeed: 5
   lookAtSpeed: 5
   updateTargetInterval: 0.2
   avoidanceRadius: 1
