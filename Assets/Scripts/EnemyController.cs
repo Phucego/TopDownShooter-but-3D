@@ -44,6 +44,12 @@ public class EnemyController : MonoBehaviour
     private Vector3 currentMoveDirection;
     private Vector3 avoidanceForce;
 
+
+    [Header("Enemy Identification")]
+    public string enemyType = "BasicEnemy";
+    public EnemyData enemyData; // Reference to the data used for this enemy
+
+
     void Awake()
     {
         healthSystem = GetComponent<HealthSystem>();
@@ -260,6 +266,7 @@ public class EnemyController : MonoBehaviour
         Debug.Log($"{gameObject.name} attacked player for {attackDamage} damage!");
     }
 
+    // Modify the HandleDeath method to include enemy data
     void HandleDeath()
     {
         if (isDead) return;
@@ -282,21 +289,30 @@ public class EnemyController : MonoBehaviour
             col.enabled = false;
         }
 
-        // Spawn death effect
-        if (deathEffectPrefab != null)
+        // Spawn death effect - use from enemyData if available
+        if (enemyData != null && enemyData.deathEffect != null)
+        {
+            Instantiate(enemyData.deathEffect, transform.position, Quaternion.identity);
+        }
+        else if (deathEffectPrefab != null)
         {
             Instantiate(deathEffectPrefab, transform.position, Quaternion.identity);
+        }
+
+        // Play death sound from enemyData if available
+        if (enemyData != null && enemyData.deathSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(enemyData.deathSound);
         }
 
         // Register kill with GameManager
         GameManager.Instance?.RegisterEnemyKill(this);
 
-        Debug.Log($"{gameObject.name} enemy has died!");
+        Debug.Log($"{gameObject.name} ({enemyType}) enemy has died!");
 
         // Return to pool after delay
         Invoke(nameof(ReturnToPool), deathDelayBeforeReturn);
     }
-
     // SINGLE ReturnToPool method - removed the duplicate
     private void ReturnToPool()
     {
