@@ -15,6 +15,12 @@ public class PlayerController : MonoBehaviour
     private bool isAutoAiming = false;
     private Vector3 autoAimDirection;
 
+    public static PlayerController Instance;
+
+    public static PlayerController GetInstance()
+    {
+        return Instance;
+    }
     void Start()
     {
         shootingController = GetComponent<ShootingController>();

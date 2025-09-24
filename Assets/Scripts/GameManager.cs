@@ -45,10 +45,8 @@ public class GameManager : MonoBehaviour
     // Enemy Events
     public static event Action<EnemyController> OnEnemyKilled;
     
-    // Power-up Events
-    public static event Action<PowerUpType> OnPowerUpCollected;
-    public static event Action<PowerUpType, float> OnPowerUpActivated;
-    public static event Action<PowerUpType> OnPowerUpExpired;
+    // Item Collection Events
+    public event Action<CollectibleItemData> OnItemCollected;
     #endregion
 
     #region Game Data
@@ -60,6 +58,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int scorePerEnemy = 100;
     [SerializeField] private int levelBonusMultiplier = 2;
     
+    [Header("Item Collection Settings")]
+    [SerializeField] private int healthRestoreAmount = 25;
+    [SerializeField] private int expPerCollectible = 50;
     
     // References
     private PlayerController playerInstance;
@@ -69,41 +70,6 @@ public class GameManager : MonoBehaviour
     public int CurrentLevel => currentLevel;
     public int EnemiesKilledThisLevel => enemiesKilledThisLevel;
     public int EnemiesNeededForNextLevel => enemiesNeededForNextLevel;
-    #endregion
-
-    #region Power-up Types
-    public enum PowerUpType
-    {
-        SpeedBoost,
-        DamageBoost,
-        HealthRegeneration,
-        Shield,
-        RapidFire,
-        DoubleScore,
-        Invincibility
-    }
-    
-    [System.Serializable]
-    public class PowerUpConfig
-    {
-        public PowerUpType type;
-        public float duration;
-        public float effectValue;
-        public string displayName;
-        public Color effectColor;
-    }
-    
-    [Header("Power-up Configuration")]
-    [SerializeField] private PowerUpConfig[] powerUpConfigs = new PowerUpConfig[]
-    {
-        new PowerUpConfig { type = PowerUpType.SpeedBoost, duration = 10f, effectValue = 1.5f, displayName = "Speed Boost", effectColor = Color.blue },
-        new PowerUpConfig { type = PowerUpType.DamageBoost, duration = 15f, effectValue = 2f, displayName = "Damage Boost", effectColor = Color.red },
-        new PowerUpConfig { type = PowerUpType.HealthRegeneration, duration = 20f, effectValue = 5f, displayName = "Health Regen", effectColor = Color.green },
-        new PowerUpConfig { type = PowerUpType.Shield, duration = 12f, effectValue = 1f, displayName = "Shield", effectColor = Color.yellow },
-        new PowerUpConfig { type = PowerUpType.RapidFire, duration = 8f, effectValue = 0.5f, displayName = "Rapid Fire", effectColor = Color.orange },
-        new PowerUpConfig { type = PowerUpType.DoubleScore, duration = 30f, effectValue = 2f, displayName = "Double Score", effectColor = Color.magenta },
-        new PowerUpConfig { type = PowerUpType.Invincibility, duration = 5f, effectValue = 1f, displayName = "Invincibility", effectColor = Color.white }
-    };
     #endregion
 
     void Start()
@@ -118,6 +84,7 @@ public class GameManager : MonoBehaviour
         
         // Subscribe to events
         OnEnemyKilled += HandleEnemyKilled;
+        CollectibleItem.OnItemCollected += HandleItemCollected;
         
         Debug.Log("GameManager initialized");
     }
@@ -176,6 +143,46 @@ public class GameManager : MonoBehaviour
         
         OnLevelChanged?.Invoke(currentLevel);
         Debug.Log($"Level up! Now level {currentLevel}. Next level needs {enemiesNeededForNextLevel} enemies");
+    }
+    #endregion
+
+    #region Item Collection Handling
+    private void HandleItemCollected(CollectibleItemData itemData, Vector3 position)
+    {
+        if (itemData == null) return;
+        
+        Debug.Log($"Item collected: {itemData.itemName} (Value: {itemData.value})");
+        
+        switch (itemData.itemType)
+        {
+            case CollectibleItemData.ItemType.Coin:
+                AddScore(itemData.value);
+                break;
+                
+            case CollectibleItemData.ItemType.Experience:
+                // Convert exp to score or handle experience system
+                AddScore(itemData.value * 10);
+                break;
+                
+            case CollectibleItemData.ItemType.Health:
+                // Restore player health
+                if (playerInstance != null)
+                {
+                    // Assuming your PlayerController has a Heal method
+                    // playerInstance.Heal(itemData.value);
+                    Debug.Log($"Player healed for {itemData.value} health");
+                }
+                break;
+                
+            case CollectibleItemData.ItemType.PowerUp:
+                // Power-up functionality removed - treat as score bonus
+                AddScore(itemData.value * 5);
+                Debug.Log($"Power-up collected (converted to score): {itemData.itemName}");
+                break;
+        }
+        
+        // Notify other systems
+        OnItemCollected?.Invoke(itemData);
     }
     #endregion
 
@@ -246,12 +253,17 @@ public class GameManager : MonoBehaviour
         OnEnemyKilled?.Invoke(enemy);
     }
 
-   
+    // Method to manually trigger item collection (for testing or other systems)
+    public void CollectItem(CollectibleItemData itemData, Vector3 position)
+    {
+        HandleItemCollected(itemData, position);
+    }
     #endregion
 
     void OnDestroy()
     {
         // Unsubscribe from events
         OnEnemyKilled -= HandleEnemyKilled;
+        CollectibleItem.OnItemCollected -= HandleItemCollected;
     }
 }
